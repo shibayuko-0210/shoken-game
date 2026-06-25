@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="初見ゲーム" />
+<meta name="theme-color" content="#f4eee2" />
+<title>初見ゲーム｜両手ドリル</title>
+<style>
+  :root{
+    --ink:#2b2438; --ink-soft:#6a6076; --paper:#f4eee2; --card:#fffdf8;
+    --line:#e6ddcc; --brass:#c8902c; --brass-dk:#a8761d; --violet:#5b4b8a;
+    --green:#2f9e68; --rose:#d8604c; --sky:#3b7fb0;
+    --shadow:0 1px 0 rgba(0,0,0,.04), 0 8px 24px -12px rgba(43,36,56,.28);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:"Hiragino Maru Gothic ProN","M PLUS Rounded 1c",system-ui,-apple-system,sans-serif;
+    color:var(--ink); background:var(--paper); -webkit-font-smoothing:antialiased; line-height:1.5}
+  .wrap{max-width:620px; margin:0 auto; padding:0 16px 48px}
+  header{padding:20px 0 10px}
+  .keys{height:22px; display:flex; border-radius:7px; overflow:hidden; box-shadow:var(--shadow); margin-bottom:14px}
+  .keys .w{flex:1; background:linear-gradient(#fffdf8,#f3ecdd); position:relative; border-right:1px solid #e7dcc6}
+  .keys .w:last-child{border-right:0}
+  .keys .b{position:absolute; top:0; width:60%; height:62%; right:-30%; background:var(--ink); border-radius:0 0 3px 3px; z-index:2}
+  .title-row{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap}
+  h1{font-size:23px; font-weight:800; margin:0}
+  .badge{font-size:12px; font-weight:700; color:var(--brass-dk); background:#fbf2dd; border:1px solid #eddcb4; padding:3px 9px; border-radius:999px}
+  .badge.lv{color:var(--violet); background:#efeaf6; border-color:#d9cfe9}
+  .sub{color:var(--ink-soft); font-size:13px; margin:6px 0 0}
+  .settings{display:flex; flex-wrap:wrap; gap:10px 14px; margin:16px 0 4px}
+  .field{display:flex; flex-direction:column; gap:5px}
+  .field .lab{font-size:11.5px; font-weight:700; color:var(--ink-soft); padding-left:2px}
+  .seg{display:flex; gap:4px; background:#ece3d2; padding:4px; border-radius:10px}
+  .seg button{border:0; background:transparent; font-family:inherit; font-weight:700; font-size:13px; color:var(--ink-soft); padding:8px 12px; border-radius:7px; cursor:pointer}
+  .seg button[aria-pressed="true"]{background:var(--card); color:var(--ink); box-shadow:var(--shadow)}
+  .seg button:focus-visible{outline:2.5px solid var(--violet); outline-offset:2px}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:20px; box-shadow:var(--shadow); padding:16px; margin-top:14px}
+  .prog{display:flex; justify-content:space-between; align-items:center; font-weight:800; font-size:14px; color:var(--ink-soft); margin-bottom:6px}
+  .dots{display:flex; gap:5px; flex-wrap:wrap}
+  .dots i{width:9px; height:9px; border-radius:50%; background:#e3d8c2; display:block}
+  .dots i.done{background:var(--brass)}
+  .dots i.cur{background:var(--violet)}
+  .staff{display:flex; justify-content:center; min-height:120px; align-items:center; overflow-x:auto}
+  .staff svg{max-width:100%; height:auto}
+  .stage{text-align:center; min-height:60px; display:flex; align-items:center; justify-content:center; margin-top:6px}
+  .stage .big{font-size:44px; font-weight:800; letter-spacing:.02em; line-height:1}
+  .stage .big.go{color:var(--green); font-size:32px}
+  .stage .big.ans{color:var(--sky); font-size:28px}
+  .stage .big.ready{color:var(--ink-soft); font-size:23px}
+  .stage .big.cd{color:var(--brass-dk)}
+  .bar{height:8px; background:#ece3d2; border-radius:999px; overflow:hidden; margin-top:4px}
+  .bar > i{display:block; height:100%; width:0%; background:var(--green); border-radius:999px}
+  .row{display:flex; gap:10px; margin-top:14px}
+  .btn{font-family:inherit; font-weight:800; font-size:16px; border:0; border-radius:13px; padding:15px 18px; cursor:pointer; box-shadow:var(--shadow)}
+  .btn:active{transform:translateY(1px)}
+  .btn:focus-visible{outline:2.5px solid var(--violet); outline-offset:2px}
+  .btn-primary{background:var(--brass); color:#fff; flex:2}
+  .btn-ghost{background:var(--card); color:var(--ink); border:1px solid var(--line); flex:1}
+  .btn[disabled]{opacity:.45; cursor:default}
+  .done{text-align:center; padding:10px 0}
+  .done .big{font-size:30px; font-weight:800}
+  .done .small{color:var(--ink-soft); font-size:14px; margin-top:6px}
+  .hint{font-size:12.5px; color:var(--ink-soft); margin-top:14px; line-height:1.65}
+  .hint b{color:var(--ink)}
+  @media (prefers-reduced-motion:reduce){.bar>i{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="keys" id="keys" aria-hidden="true"></div>
+    <div class="title-row"><h1>初見ゲーム</h1><span class="badge">ピアノ グレード7級</span><span class="badge lv" id="levelBadge">2小節・やさしい</span></div>
+    <p class="sub">問題が出る → 3・2・1 → ひいて！ → 正解の音。つづけてチャレンジ。</p>
+  </header>
+
+  <div class="settings">
+    <div class="field">
+      <span class="lab">むずかしさ</span>
+      <div class="seg" id="segDiff" role="group" aria-label="むずかしさ">
+        <button data-d="1" aria-pressed="true">やさしい</button>
+        <button data-d="2" aria-pressed="false">ふつう</button>
+        <button data-d="3" aria-pressed="false">むずかしい</button>
+      </div>
+    </div>
+    <div class="field">
+      <span class="lab">ペース</span>
+      <div class="seg" id="segPace" role="group" aria-label="ペース">
+        <button data-p="54" aria-pressed="true">ゆっくり</button>
+        <button data-p="66" aria-pressed="false">ふつう</button>
+        <button data-p="80" aria-pressed="false">はやい</button>
+      </div>
+    </div>
+    <div class="field">
+      <span class="lab">問題数</span>
+      <div class="seg" id="segNum" role="group" aria-label="問題数">
+        <button data-n="5" aria-pressed="false">5</button>
+        <button data-n="10" aria-pressed="true">10</button>
+        <button data-n="20" aria-pressed="false">20</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="prog"><span id="progText">準備OK</span><span class="dots" id="dots"></span></div>
+    <div class="staff" id="gStaff"></div>
+    <div class="stage"><div class="big ready" id="stage">スタートを押してね</div></div>
+    <div class="bar"><i id="fill"></i></div>
+  </div>
+
+  <div class="row">
+    <button class="btn btn-primary" id="startBtn">スタート</button>
+    <button class="btn btn-ghost" id="stopBtn" disabled>やめる</button>
+  </div>
+
+  <p class="hint">遊び方：問題が出たら<b>3・2・1</b>で準備、「<b>ひいて！</b>」でピアノを弾く、すぐ<b>正解の音</b>で答え合わせ。<b>やさしい</b>＝2小節の長調、<b>ふつう</b>＝グレード7級レベルの4小節、<b>むずかしい</b>＝7級レベルの8小節（ト/ニ/ヘ/変ロ長調・イ/ホ/ニ/ト短調、3/4拍子や付点、I・IV・V・V7・II の和音、スラー・タイ入り）。最初に画面を一度タッチすると音が出ます。</p>
+</div>
+
+<script>
+(function(){
+  var INK="#2b2438", S=11;
+  var kb=document.getElementById('keys');
+  for(var i=0;i<14;i++){var w=document.createElement('div'); w.className='w';
+    if([0,1,3,4,5,7,8,10,11,12].indexOf(i)>-1){var b=document.createElement('div'); b.className='b'; w.appendChild(b);} kb.appendChild(w);}
+
+  /* ---------- audio: piano-ish synth ---------- */
+  var ac=null;
+  function audio(){ if(!ac){ try{ac=new (window.AudioContext||window.webkitAudioContext)();}catch(e){} } if(ac&&ac.state==='suspended') ac.resume(); return ac; }
+  document.addEventListener('pointerdown', function(){ audio(); });
+  function midi(p){ var m=p.match(/^([A-G])([#b]?)(-?\d+)$/); var b={C:0,D:2,E:4,F:5,G:7,A:9,B:11}[m[1]]; if(m[2]==='#')b++; if(m[2]==='b')b--; return b+(parseInt(m[3],10)+1)*12; }
+  function freq(p){ return 440*Math.pow(2,(midi(p)-69)/12); }
+  var PARTIALS=[[1,1.0],[2,0.42],[3,0.22],[4,0.12],[5,0.07],[6,0.04]];
+  function piano(p,t,dur,vel){ var c=audio(); if(!c) return; vel=vel||0.5; var f=freq(p);
+    var master=c.createGain(); var lp=c.createBiquadFilter(); lp.type='lowpass';
+    lp.frequency.setValueAtTime(Math.min(9000,f*9),t); lp.frequency.exponentialRampToValueAtTime(Math.max(700,f*2.4),t+Math.min(dur+0.3,2.0)); lp.Q.value=0.3;
+    master.connect(lp); lp.connect(c.destination);
+    var peak=vel*0.34;
+    master.gain.setValueAtTime(0.0001,t); master.gain.exponentialRampToValueAtTime(peak,t+0.006);
+    master.gain.exponentialRampToValueAtTime(Math.max(0.0009,peak*0.3),t+0.35);
+    master.gain.exponentialRampToValueAtTime(0.0001,t+dur+0.35);
+    PARTIALS.forEach(function(pr){ var o=c.createOscillator(); o.type='sine'; o.frequency.value=f*pr[0];
+      if(pr[0]>1) o.detune.value=(pr[0]-1)*3.5; var g=c.createGain(); g.gain.value=pr[1];
+      o.connect(g).connect(master); o.start(t); o.stop(t+dur+0.4); }); }
+  function clk(t,hi){ var c=audio(); if(!c) return; var o=c.createOscillator(), g=c.createGain();
+    o.type='square'; o.frequency.value=hi?1700:1150; g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.2,t+0.004); g.gain.exponentialRampToValueAtTime(0.0001,t+0.06);
+    o.connect(g).connect(c.destination); o.start(t); o.stop(t+0.08); }
+
+  /* ---------- svg notation ---------- */
+  function svg(w,h,inner){ return '<svg viewBox="0 0 '+w+' '+h+'" width="'+w+'" height="'+h+'" xmlns="http://www.w3.org/2000/svg">'+inner+'</svg>'; }
+  function ln(x1,y1,x2,y2,wd,c){ return '<line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" stroke="'+(c||INK)+'" stroke-width="'+wd+'" stroke-linecap="round"/>'; }
+  function staff5(x,top,w){ var s=''; for(var i=0;i<5;i++) s+=ln(x,top+i*S,x+w,top+i*S,1.1,'#3a3550'); return s; }
+  function glyph(x,y,size,t){ return '<text x="'+x+'" y="'+y+'" font-size="'+size+'" text-anchor="middle" dominant-baseline="central" fill="'+INK+'" font-family="Bravura,\'Noto Music\',\'Apple Symbols\',serif">'+t+'</text>'; }
+  function head(cx,cy,filled){ return '<ellipse cx="'+cx+'" cy="'+cy+'" rx="'+(0.72*S)+'" ry="'+(0.52*S)+'" transform="rotate(-20 '+cx+' '+cy+')" fill="'+(filled?INK:'none')+'" stroke="'+INK+'" stroke-width="1.5"/>'; }
+  function dotG(cx,cy){ return '<circle cx="'+(cx+1.1*S)+'" cy="'+(cy-0.25*S)+'" r="'+(0.18*S)+'" fill="'+INK+'"/>'; }
+  var LIDX={C:0,D:1,E:2,F:3,G:4,A:5,B:6};
+  function stepNum(l,o){ return o*7+LIDX[l]; }
+  function parse(p){ var m=p.match(/^([A-G])([#b]?)(-?\d+)$/); return {l:m[1],a:m[2],o:parseInt(m[3],10)}; }
+  function noteY(pitch,clef,top){ var q=parse(pitch); var st=stepNum(q.l,q.o); var ref=clef==='treble'?stepNum('E',4):stepNum('G',2); return (top+4*S)-(st-ref)*(S/2); }
+  function ledgers(cx,cy,top){ var s='',bot=top+4*S,x1=cx-0.95*S,x2=cx+0.95*S,y; if(cy<top-0.1){ for(y=top-S;y>=cy-0.1;y-=S) s+=ln(x1,y,x2,y,1.2,INK);} else if(cy>bot+0.1){ for(y=bot+S;y<=cy+0.1;y+=S) s+=ln(x1,y,x2,y,1.2,INK);} return s; }
+  function accGly(a){ return a==='#'?'\u266F':(a==='b'?'\u266D':'\u266E'); }
+
+  var SHARP_ORD=['F','C','G','D','A','E','B'], FLAT_ORD=['B','E','A','D','G','C','F'];
+  function keyAlters(sig){ var m={}; if(!sig) return m; var ord=sig.t==='#'?SHARP_ORD:FLAT_ORD; for(var i=0;i<sig.n;i++) m[ord[i]]=sig.t; return m; }
+  var SHARP_T=[['F',5],['C',5]], FLAT_T=[['B',4],['E',5]], SHARP_B=[['F',3],['C',3]], FLAT_B=[['B',2],['E',3]];
+  function drawKeySig(sig,clef,x,top){ if(!sig) return {svg:'',w:0};
+    var list=clef==='treble'?(sig.t==='#'?SHARP_T:FLAT_T):(sig.t==='#'?SHARP_B:FLAT_B);
+    var gl=sig.t==='#'?'\u266F':'\u266D', s='', gx=x; for(var i=0;i<sig.n;i++){ var pc=list[i]; s+=glyph(gx,noteY(pc[0]+pc[1],clef,top),1.9*S,gl); gx+=1.25*S; }
+    return {svg:s,w:sig.n*1.25*S+0.5*S}; }
+
+  var BD={w:4,h:2,q:1,'8':0.5,'16':0.25};
+  function beatsOf(n){ return BD[n.dur]*(n.dot?1.5:1); }
+  // notes: array of { pitches:[...] (or pitch), dur, dot }
+  function drawVoice(notes,clef,top,mx,mw,sig,opts){
+    var alters=keyAlters(sig), accMem={};
+    var leftIn=1.0*S, rightIn=0.7*S, area=mw-leftIn-rightIn, pos=0, items=[];
+    notes.forEach(function(n){ var ps=n.pitches||[n.pitch]; items.push({n:n,ps:ps,beatPos:pos}); pos+=beatsOf(n); });
+    var total=pos||4;
+    items.forEach(function(it){ it.x=mx+leftIn+it.beatPos/total*area; it.cys=it.ps.map(function(p){return noteY(p,clef,top);}); it.cyTop=Math.min.apply(null,it.cys); it.cyBot=Math.max.apply(null,it.cys); });
+    var s='', mid=top+2*S;
+    // heads, ledgers, accidentals, dots
+    items.forEach(function(it){ var filled=(it.n.dur==='q'||it.n.dur==='8'||it.n.dur==='16');
+      it.ps.forEach(function(p,k){ var cy=it.cys[k], q=parse(p), implied=alters[q.l]||'', mk=q.l+q.o;
+        var cur=(mk in accMem)?accMem[mk]:implied; if((q.a||'')!==cur){ s+=glyph(it.x-1.55*S, cy, 1.7*S, accGly(q.a||'')); accMem[mk]=(q.a||''); }
+        s+=ledgers(it.x,cy,top)+head(it.x,cy,filled); });
+      if(it.n.dot) s+=dotG(it.x,it.cyBot); });
+    // stems + beams
+    var i=0;
+    while(i<items.length){ var it=items[i], d=it.n.dur;
+      if((d==='8'||d==='16') && it.ps.length===1){
+        var j=i; while(j+1<items.length && (items[j+1].n.dur==='8'||items[j+1].n.dur==='16') && items[j+1].ps.length===1) j++;
+        if(j>i){ var minCy=1e9,k; for(k=i;k<=j;k++) minCy=Math.min(minCy,items[k].cys[0]); var by=minCy-3.2*S;
+          for(k=i;k<=j;k++){ var sx=items[k].x+0.66*S; s+=ln(sx,items[k].cys[0],sx,by,1.5,INK);} 
+          s+='<rect x="'+(items[i].x+0.66*S)+'" y="'+by+'" width="'+(items[j].x-items[i].x)+'" height="'+(0.5*S)+'" fill="'+INK+'"/>'; i=j+1; continue; }
+        else { var up=it.cys[0]>=mid, sx2=up?it.x+0.66*S:it.x-0.66*S, ey=up?it.cys[0]-3.2*S:it.cys[0]+3.2*S; s+=ln(sx2,it.cys[0],sx2,ey,1.5,INK);
+          s+='<path d="M'+sx2+','+ey+' q '+(1.1*S)+','+(up?0.7*S:-0.7*S)+' '+(0.7*S)+','+(up?1.9*S:-1.9*S)+'" fill="none" stroke="'+INK+'" stroke-width="1.7"/>'; i++; continue; } }
+      else if(d==='q'||d==='h'){ var avg=(it.cyTop+it.cyBot)/2, up3=avg>=mid;
+        var sx3=up3?it.x+0.66*S:it.x-0.66*S; var y1=up3?it.cyBot:it.cyTop; var ey3=up3?it.cyTop-3.2*S:it.cyBot+3.2*S; s+=ln(sx3,y1,sx3,ey3,1.5,INK); i++; }
+      else i++; // whole: no stem
+    }
+    // ties (same-pitch, single notehead, adjacent)
+    for(var ti2=0; ti2<items.length-1; ti2++){
+      if(notes[ti2].tieNext && items[ti2].ps.length===1 && items[ti2+1] && items[ti2+1].ps.length===1 && items[ti2].ps[0]===items[ti2+1].ps[0]){
+        var ax=items[ti2].x+0.7*S, bx=items[ti2+1].x-0.7*S, ay=items[ti2].cys[0]+0.95*S, mxx=(ax+bx)/2;
+        s+='<path d="M'+ax+','+ay+' Q'+mxx+','+(ay+0.95*S)+' '+bx+','+ay+'" fill="none" stroke="'+INK+'" stroke-width="1.4"/>';
+      }
+    }
+    // slurs (phrase arc above)
+    if(opts && opts.slurs){ opts.slurs.forEach(function(sp){ var a=items[sp[0]], b=items[sp[1]]; if(!a||!b||a===b) return;
+      var topY=Math.min(a.cyTop,b.cyTop)-1.1*S, mx2=(a.x+b.x)/2;
+      s+='<path d="M'+a.x+','+topY+' Q'+mx2+','+(topY-1.6*S)+' '+b.x+','+topY+'" fill="none" stroke="'+INK+'" stroke-width="1.4"/>';
+    }); }
+    return s;
+  }
+
+  function renderProblem(prob){
+    var host=document.getElementById('gStaff'); var W=Math.min(580,(host.clientWidth||580)); if(W<320)W=320;
+    var ms=prob.measures, mpl= ms.length<=2?ms.length:2, lines=Math.ceil(ms.length/mpl);
+    var lineH=150, H=lines*lineH+8, x=8, w=W-16, gutter=3.2*S, sigW=prob.sig? (prob.sig.n*1.25*S+0.6*S):0;
+    var inner='';
+    for(var L=0;L<lines;L++){
+      var topT=L*lineH+18, topB=topT+86;
+      inner+=staff5(x,topT,w)+staff5(x,topB,w)+ln(x,topT,x,topB+4*S,1.6,INK);
+      inner+=glyph(x+18,topT+2.0*S,4.2*S,'\uD834\uDD1E')+glyph(x+18,topB+1.2*S,2.9*S,'\uD834\uDD22');
+      inner+=drawKeySig(prob.sig,'treble',x+gutter+6,topT).svg+drawKeySig(prob.sig,'bass',x+gutter+6,topB).svg;
+      var cx=x+gutter+8+sigW, cw=w-(gutter+8+sigW);
+      if(L===0){ inner+=glyph(cx+0.7*S,topT+1*S,1.9*S,''+prob.meter)+glyph(cx+0.7*S,topT+3*S,1.9*S,'4');
+        inner+=glyph(cx+0.7*S,topB+1*S,1.9*S,''+prob.meter)+glyph(cx+0.7*S,topB+3*S,1.9*S,'4'); cx+=1.9*S; cw-=1.9*S; }
+      var lineMs=ms.slice(L*mpl,L*mpl+mpl), mw=cw/lineMs.length;
+      for(var c=0;c<lineMs.length;c++){ var mm=lineMs[c], mx=cx+c*mw;
+        inner+=drawVoice(mm.rh,'treble',topT,mx,mw,prob.sig,{slurs:mm.slurs})+drawVoice(mm.lh,'bass',topB,mx,mw,prob.sig);
+        inner+=ln(mx+mw,topT,mx+mw,topT+4*S,1.2,INK)+ln(mx+mw,topB,mx+mw,topB+4*S,1.2,INK); }
+    }
+    host.innerHTML=svg(W,H,inner);
+  }
+
+  /* ---------- keys & theory ---------- */
+  var KEYCFG={
+    C:{cls:['C','D','E','F','G','A','B'],sig:null},
+    G:{cls:['G','A','B','C','D','E','F#'],sig:{t:'#',n:1}},
+    D:{cls:['D','E','F#','G','A','B','C#'],sig:{t:'#',n:2}},
+    F:{cls:['F','G','A','Bb','C','D','E'],sig:{t:'b',n:1}},
+    Bb:{cls:['Bb','C','D','Eb','F','G','A'],sig:{t:'b',n:2}},
+    Am:{cls:['A','B','C','D','E','F','G#'],sig:null},
+    Em:{cls:['E','F#','G','A','B','C','D#'],sig:{t:'#',n:1}},
+    Dm:{cls:['D','E','F','G','A','Bb','C#'],sig:{t:'b',n:1}},
+    Gm:{cls:['G','A','Bb','C','D','Eb','F#'],sig:{t:'b',n:2}}
+  };
+  function scalePitches(cls,startOct,count){ var out=[],oct=startOct,prev=null; for(var i=0;i<count;i++){ var pc=cls[i%7],letter=pc[0],idx=LIDX[letter]; if(prev!==null&&idx<prev) oct++; prev=idx; out.push(pc+oct);} return out; }
+  function pcAtLeast(pc,minMidi){ for(var o=1;o<7;o++){ var p=pc+o; if(midi(p)>=minMidi) return p; } return pc+5; }
+  function buildChord(cls,deg){ var d=deg-1; var r=pcAtLeast(cls[d%7],43); var th=pcAtLeast(cls[(d+2)%7],midi(r)+1); var fi=pcAtLeast(cls[(d+4)%7],midi(th)+1); return [r,th,fi]; }
+  var ROOTDEG={I:1,IV:4,V:5,V7:5,II:2};
+  function triadIdx(sym){ var r=ROOTDEG[sym]-1; return [r,r+2,r+4]; }
+  function rnd(a){ return a[Math.floor(Math.random()*a.length)]; }
+  function nearest(c,t){ var best=c[0],bd=1e9; c.forEach(function(v){ var d=Math.abs(v-t); if(d<bd){bd=d;best=v;} }); return best; }
+  function clampI(i,mx){ return Math.max(0,Math.min(mx-1,i)); }
+
+  var PAT1=[[0,1,2,3],[0,2,4,2],[4,3,2,1],[0,2,1,0],[2,3,4,2],[4,2,0,2],[0,1,2,0],[2,1,0,1],[0,2,4,4],[4,4,2,0],[0,1,2,4],[4,3,2,0]];
+  var PROG2=[['I','V'],['I','IV'],['V','I'],['IV','I'],['I','V'],['I','IV']];
+  var PROG3=[['I','IV','V7','I'],['I','II','V','I'],['I','IV','I','V7'],['I','V','IV','I'],['I','IV','V','I'],['I','II','V7','I']];
+  var R3=[[{dur:'q'},{dur:'q'},{dur:'q'}],[{dur:'h',dot:1}],[{dur:'q',dot:1},{dur:'8'},{dur:'q'}],[{dur:'h'},{dur:'q'}],[{dur:'q'},{dur:'h'}]];
+  var R4=[[{dur:'q'},{dur:'q'},{dur:'q'},{dur:'q'}],[{dur:'h'},{dur:'q'},{dur:'q'}],[{dur:'q',dot:1},{dur:'8'},{dur:'q'},{dur:'q'}],[{dur:'h',dot:1},{dur:'q'}],[{dur:'q'},{dur:'q'},{dur:'h'}],[{dur:'q'},{dur:'8'},{dur:'8'},{dur:'h'}]];
+
+  function decorate(mm,rN){ var deco=Math.random();
+    if(deco<0.22){ for(var t=0;t<rN.length-1;t++){ if(rN[t].dur==='q'&&rN[t+1].dur==='q'){ rN[t+1]={pitch:rN[t].pitch,dur:'q'}; rN[t].tieNext=true; break; } } }
+    else if(deco<0.5 && rN.length>=2){ mm.slurs=[[0,rN.length-1]]; } }
+
+  function genEasy(){
+    var key=rnd(['C','G','F','D']), cfg=KEYCFG[key], rh=scalePitches(cfg.cls,4,11), lh=scalePitches(cfg.cls,3,9);
+    var prog=rnd(PROG2), measures=[], prev=0;
+    for(var m=0;m<2;m++){ var sym=prog[m], tones=triadIdx(sym), rN=[], cur=nearest(tones,prev);
+      for(var beat=0;beat<4;beat++){ var strong=(beat%2===0);
+        if(Math.random()<0.22 && beat<3){ var a=strong?nearest(tones,cur):cur+(Math.random()<.5?1:-1), b=a+(Math.random()<.5?1:-1); a=clampI(a,10); b=clampI(b,10); rN.push({pitch:rh[a],dur:'8'}); rN.push({pitch:rh[b],dur:'8'}); cur=b; }
+        else { var p=strong?nearest(tones,cur):cur+(Math.random()<.5?1:-1); p=clampI(p,10); rN.push({pitch:rh[p],dur:'q'}); cur=p; } }
+      if(m===1) rN[rN.length-1]={pitch:rh[nearest(tones,0)],dur:'q'};
+      prev=cur; var mm={rh:rN,lh:[{pitch:lh[ROOTDEG[sym]-1],dur:'w'}]}; decorate(mm,rN); measures.push(mm); }
+    return {key:key,sig:cfg.sig,meter:4,measures:measures};
+  }
+  function genHard(nBars){
+    var key3=rnd(['G','D','F','Bb','Am','Em','Dm','Gm']), cfg3=KEYCFG[key3], rh3=scalePitches(cfg3.cls,4,10);
+    var meter=Math.random()<0.5?3:4, prog=[];
+    while(prog.length<nBars) prog=prog.concat(rnd(PROG3)); prog=prog.slice(0,nBars); prog[nBars-1]='I';
+    var measures3=[], prev3=0;
+    for(var i2=0;i2<nBars;i2++){ var sym3=prog[i2], tones3=triadIdx(sym3), rhythm= meter===3?rnd(R3):rnd(R4), rN3=[], cur3=nearest(tones3,prev3), slot=0;
+      rhythm.forEach(function(sl){ var strong=(slot===0); var p; if(sl.dur==='8'){ p=cur3+(Math.random()<.5?1:-1);} else { p=strong?nearest(tones3,cur3):(Math.random()<.5?nearest(tones3,cur3):cur3+(Math.random()<.5?1:-1)); }
+        p=clampI(p,9); rN3.push({pitch:rh3[p],dur:sl.dur,dot:sl.dot}); cur3=p; slot+=beatsOf(sl); });
+      if(i2===nBars-1){ rN3[rN3.length-1]={pitch:rh3[nearest([0,7],cur3)],dur:rN3[rN3.length-1].dur,dot:rN3[rN3.length-1].dot}; }
+      prev3=cur3; var chord=buildChord(cfg3.cls,ROOTDEG[sym3]); var ldur= meter===3?'h':'w', ldot= meter===3?1:0;
+      var mo={rh:rN3, lh:[{pitches:chord,dur:ldur,dot:ldot}]}; decorate(mo,rN3); measures3.push(mo); }
+    return {key:key3,sig:cfg3.sig,meter:meter,measures:measures3,mark: meter===3?'Allegretto':'Moderato'};
+  }
+  function genProblem(level){ if(level===1) return genEasy(); if(level===2) return genHard(4); return genHard(8); }
+  function buildPool(level,n){ var a=[]; for(var i=0;i<n;i++) a.push(genProblem(level)); return a; }
+  var POOL={1:buildPool(1,100),2:buildPool(2,100),3:buildPool(3,100)};
+  function shuffle(a){ a=a.slice(); for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
+
+  /* ---------- game loop ---------- */
+  var diff=1, pace=54, numQ=10, queue=[], idx=0, timers=[], running=false;
+  var BADGE={1:'2小節・やさしい',2:'4小節・7級レベル',3:'8小節・7級レベル'};
+  function later(ms,fn){ var id=setTimeout(fn,ms); timers.push(id); return id; }
+  function clearTimers(){ timers.forEach(clearTimeout); timers=[]; }
+  function setStage(t,c){ var e=document.getElementById('stage'); e.className='big '+(c||''); e.textContent=t; }
+  function setProg(){ document.getElementById('progText').textContent= running?('問題 '+(idx+1)+' / '+numQ):'準備OK';
+    var d=document.getElementById('dots'); d.innerHTML=''; for(var i=0;i<numQ;i++){ var t=document.createElement('i'); if(i<idx)t.className='done'; else if(i===idx&&running)t.className='cur'; d.appendChild(t);} }
+  function fillBar(full,ms){ var f=document.getElementById('fill'); f.style.transition='none'; f.style.width=full?'100%':'0%'; if(ms){ requestAnimationFrame(function(){ f.style.transition='width '+ms+'ms linear'; f.style.width='0%'; }); } }
+  function totalBeats(prob){ return prob.measures.length*prob.meter; }
+
+  function startGame(){ audio(); running=true; idx=0; queue=shuffle(POOL[diff]).slice(0,numQ);
+    document.getElementById('startBtn').disabled=true; document.getElementById('stopBtn').disabled=false; document.getElementById('startBtn').textContent='プレイ中…';
+    setProg(); runProblem(); }
+  function stopGame(finished){ clearTimers(); running=false;
+    document.getElementById('startBtn').disabled=false; document.getElementById('stopBtn').disabled=true;
+    document.getElementById('startBtn').textContent= finished?'もう一度':'スタート'; fillBar(false,0); setProg(); }
+
+  function runProblem(){ if(idx>=queue.length){ finish(); return; }
+    var prob=queue[idx]; renderProblem(prob); setProg();
+    var spb=60/pace, beats=totalBeats(prob), meterBeats=prob.meter;
+    setStage('よ う い','ready'); fillBar(true,0);
+    later(650,function(){ var c=audio(), t0=c?c.currentTime+0.05:0;
+      ['3','2','1'].forEach(function(num,k){ if(c) clk(t0+k*spb,k===0); later(650+Math.round(k*spb*1000),function(){ setStage(num,'cd'); }); });
+      var goAt=650+Math.round(3*spb*1000);
+      later(goAt,function(){ setStage('ひいて！','go'); var winMs=Math.round((beats+1)*spb*1000); fillBar(true,0); fillBar(false,winMs);
+        later(winMs,function(){ setStage('こたえ ♪','ans'); playAnswer(prob,spb);
+          var ansMs=Math.round(beats*spb*1000)+600;
+          later(ansMs,function(){ idx++; if(idx>=queue.length) finish(); else runProblem(); }); }); }); }); }
+
+  function playAnswer(prob,spb){ var c=audio(); if(!c) return; var t0=c.currentTime+0.08, tR=0;
+    prob.measures.forEach(function(mm){
+      var l=0, k=0;
+      while(k<mm.rh.length){ var first=mm.rh[k], pitch=first.pitch||(first.pitches&&first.pitches[0]); var b=beatsOf(first), startBeat=l;
+        while(mm.rh[k].tieNext && mm.rh[k+1]){ k++; b+=beatsOf(mm.rh[k]); }
+        piano(pitch, t0+(tR+startBeat)*spb, b*spb*0.96, 0.5); l=startBeat+b; k++; }
+      var l2=0; mm.lh.forEach(function(n){ var b2=beatsOf(n); var ps=n.pitches||[n.pitch]; ps.forEach(function(p){ piano(p,t0+(tR+l2)*spb,b2*spb*0.96,0.42); }); l2+=b2; });
+      tR+=prob.meter; }); }
+
+  function finish(){ clearTimers(); running=false; var c=audio(); if(c){ var t=c.currentTime+0.1; ['C5','E5','G5','C6'].forEach(function(p,k){ piano(p,t+k*0.12,0.6,0.5); }); }
+    document.getElementById('gStaff').innerHTML='<div class="done"><div class="big">おしまい！🎉</div><div class="small">'+numQ+'問クリア。よくがんばりました。</div></div>';
+    setStage('もう一度やる？','ready'); fillBar(false,0);
+    document.getElementById('startBtn').disabled=false; document.getElementById('stopBtn').disabled=true; document.getElementById('startBtn').textContent='もう一度';
+    document.getElementById('progText').textContent='クリア '+numQ+' / '+numQ;
+    var d=document.getElementById('dots'); d.innerHTML=''; for(var i=0;i<numQ;i++){ var it=document.createElement('i'); it.className='done'; d.appendChild(it);} }
+
+  function segHandler(id,attr,set){ document.querySelectorAll('#'+id+' button').forEach(function(b){ b.addEventListener('click',function(){ if(running) return;
+    document.querySelectorAll('#'+id+' button').forEach(function(o){o.setAttribute('aria-pressed','false');}); b.setAttribute('aria-pressed','true'); set(+b.getAttribute(attr)); }); }); }
+  segHandler('segDiff','data-d',function(v){ diff=v; document.getElementById('levelBadge').textContent=BADGE[v]; renderProblem(rnd(POOL[v])); setProg(); });
+  segHandler('segPace','data-p',function(v){ pace=v; });
+  segHandler('segNum','data-n',function(v){ numQ=v; setProg(); });
+  document.getElementById('startBtn').addEventListener('click', startGame);
+  document.getElementById('stopBtn').addEventListener('click', function(){ stopGame(false); renderProblem(rnd(POOL[diff])); setStage('スタートを押してね','ready'); });
+
+  renderProblem(rnd(POOL[1])); setProg();
+  window.addEventListener('resize', function(){ if(!running) renderProblem(rnd(POOL[diff])); });
+})();
+</script>
+</body>
+</html>
