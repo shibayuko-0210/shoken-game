@@ -116,7 +116,7 @@
     <button class="btn btn-ghost" id="stopBtn" disabled>やめる</button>
   </div>
 
-  <p class="hint">遊び方：問題が出たら<b>3・2・1</b>で準備、「<b>ひいて！</b>」でピアノを弾く、すぐ<b>正解の音</b>で答え合わせ。<b>やさしい</b>＝2小節の長調、<b>ふつう</b>＝グレード7級レベルの4小節、<b>むずかしい</b>＝7級レベルの8小節（ト/ニ/ヘ/変ロ長調・イ/ホ/ニ/ト短調、3/4拍子や付点、I・IV・V・V7・II の和音、スラー・タイ入り）。最初に画面を一度タッチすると音が出ます。</p>
+  <p class="hint">遊び方：問題が出たら<b>3・2・1</b>で準備、「<b>ひいて！</b>」でピアノを弾く、すぐ<b>正解の音</b>で答え合わせ。<b>やさしい</b>＝2小節の長調、<b>ふつう</b>＝7級レベルの4小節、<b>むずかしい</b>＝7級本番レベルの8小節（ト/ニ/ヘ/変ロ長調・イ/ホ/ニ/ト短調、<b>2/4・3/4・4/4・6/8拍子</b>、付点リズム、I・IV・V・V7・II の和音、<b>ベース＋和音の伴奏形</b>、長いスラー・小節をまたぐタイ、テンポ表記）。最初に画面を一度タッチすると音が出ます。</p>
 </div>
 
 <script>
@@ -198,7 +198,7 @@
     var i=0;
     while(i<items.length){ var it=items[i], d=it.n.dur;
       if((d==='8'||d==='16') && it.ps.length===1){
-        var j=i; while(j+1<items.length && (items[j+1].n.dur==='8'||items[j+1].n.dur==='16') && items[j+1].ps.length===1) j++;
+        var j=i; while(j+1<items.length && (items[j+1].n.dur==='8'||items[j+1].n.dur==='16') && items[j+1].ps.length===1 && !items[j+1].n.beamBreak) j++;
         if(j>i){ var minCy=1e9,k; for(k=i;k<=j;k++) minCy=Math.min(minCy,items[k].cys[0]); var by=minCy-3.2*S;
           for(k=i;k<=j;k++){ var sx=items[k].x+0.66*S; s+=ln(sx,items[k].cys[0],sx,by,1.5,INK);} 
           s+='<rect x="'+(items[i].x+0.66*S)+'" y="'+by+'" width="'+(items[j].x-items[i].x)+'" height="'+(0.5*S)+'" fill="'+INK+'"/>'; i=j+1; continue; }
@@ -208,38 +208,37 @@
         var sx3=up3?it.x+0.66*S:it.x-0.66*S; var y1=up3?it.cyBot:it.cyTop; var ey3=up3?it.cyTop-3.2*S:it.cyBot+3.2*S; s+=ln(sx3,y1,sx3,ey3,1.5,INK); i++; }
       else i++; // whole: no stem
     }
-    // ties (same-pitch, single notehead, adjacent)
-    for(var ti2=0; ti2<items.length-1; ti2++){
-      if(notes[ti2].tieNext && items[ti2].ps.length===1 && items[ti2+1] && items[ti2+1].ps.length===1 && items[ti2].ps[0]===items[ti2+1].ps[0]){
-        var ax=items[ti2].x+0.7*S, bx=items[ti2+1].x-0.7*S, ay=items[ti2].cys[0]+0.95*S, mxx=(ax+bx)/2;
-        s+='<path d="M'+ax+','+ay+' Q'+mxx+','+(ay+0.95*S)+' '+bx+','+ay+'" fill="none" stroke="'+INK+'" stroke-width="1.4"/>';
-      }
-    }
-    // slurs (phrase arc above)
-    if(opts && opts.slurs){ opts.slurs.forEach(function(sp){ var a=items[sp[0]], b=items[sp[1]]; if(!a||!b||a===b) return;
-      var topY=Math.min(a.cyTop,b.cyTop)-1.1*S, mx2=(a.x+b.x)/2;
-      s+='<path d="M'+a.x+','+topY+' Q'+mx2+','+(topY-1.6*S)+' '+b.x+','+topY+'" fill="none" stroke="'+INK+'" stroke-width="1.4"/>';
-    }); }
-    return s;
+    return {svg:s, items:items};
   }
+  function drawTie(a,b){ var ax=a.x+0.7*S, bx=b.x-0.7*S, ay=Math.max(a.cyBot,b.cyBot)+0.95*S, mxx=(ax+bx)/2;
+    return '<path d="M'+ax+','+ay+' Q'+mxx+','+(ay+0.95*S)+' '+bx+','+ay+'" fill="none" stroke="'+INK+'" stroke-width="1.4"/>'; }
+  function drawSlur(a,b){ var topY=Math.min(a.cyTop,b.cyTop)-1.1*S, mx2=(a.x+b.x)/2;
+    return '<path d="M'+a.x+','+topY+' Q'+mx2+','+(topY-1.7*S)+' '+b.x+','+topY+'" fill="none" stroke="'+INK+'" stroke-width="1.4"/>'; }
 
   function renderProblem(prob){
     var host=document.getElementById('gStaff'); var W=Math.min(580,(host.clientWidth||580)); if(W<320)W=320;
     var ms=prob.measures, mpl= ms.length<=2?ms.length:2, lines=Math.ceil(ms.length/mpl);
-    var lineH=150, H=lines*lineH+8, x=8, w=W-16, gutter=3.2*S, sigW=prob.sig? (prob.sig.n*1.25*S+0.6*S):0;
+    var lineH=150, H=lines*lineH+14, x=8, w=W-16, gutter=3.2*S, sigW=prob.sig?(prob.sig.n*1.25*S+0.6*S):0;
     var inner='';
     for(var L=0;L<lines;L++){
-      var topT=L*lineH+18, topB=topT+86;
+      var topT=L*lineH+24, topB=topT+86;
       inner+=staff5(x,topT,w)+staff5(x,topB,w)+ln(x,topT,x,topB+4*S,1.6,INK);
       inner+=glyph(x+18,topT+2.0*S,4.2*S,'\uD834\uDD1E')+glyph(x+18,topB+1.2*S,2.9*S,'\uD834\uDD22');
       inner+=drawKeySig(prob.sig,'treble',x+gutter+6,topT).svg+drawKeySig(prob.sig,'bass',x+gutter+6,topB).svg;
       var cx=x+gutter+8+sigW, cw=w-(gutter+8+sigW);
-      if(L===0){ inner+=glyph(cx+0.7*S,topT+1*S,1.9*S,''+prob.meter)+glyph(cx+0.7*S,topT+3*S,1.9*S,'4');
-        inner+=glyph(cx+0.7*S,topB+1*S,1.9*S,''+prob.meter)+glyph(cx+0.7*S,topB+3*S,1.9*S,'4'); cx+=1.9*S; cw-=1.9*S; }
-      var lineMs=ms.slice(L*mpl,L*mpl+mpl), mw=cw/lineMs.length;
+      if(L===0){
+        if(prob.mark) inner+='<text x="'+(x+1)+'" y="'+(topT-9)+'" font-size="13" font-style="italic" font-weight="700" fill="'+INK+'" font-family="Georgia,serif">'+prob.mark+'</text>';
+        inner+=glyph(cx+0.7*S,topT+1*S,1.9*S,''+prob.meter.num)+glyph(cx+0.7*S,topT+3*S,1.9*S,''+prob.meter.den);
+        inner+=glyph(cx+0.7*S,topB+1*S,1.9*S,''+prob.meter.num)+glyph(cx+0.7*S,topB+3*S,1.9*S,''+prob.meter.den); cx+=1.9*S; cw-=1.9*S;
+      }
+      var lineMs=ms.slice(L*mpl,L*mpl+mpl), mw=cw/lineMs.length, lineRH=[], mStart=[], mEnd=[];
       for(var c=0;c<lineMs.length;c++){ var mm=lineMs[c], mx=cx+c*mw;
-        inner+=drawVoice(mm.rh,'treble',topT,mx,mw,prob.sig,{slurs:mm.slurs})+drawVoice(mm.lh,'bass',topB,mx,mw,prob.sig);
+        var rOut=drawVoice(mm.rh,'treble',topT,mx,mw,prob.sig), lOut=drawVoice(mm.lh,'bass',topB,mx,mw,prob.sig);
+        inner+=rOut.svg+lOut.svg;
+        mStart[L*mpl+c]=lineRH.length; rOut.items.forEach(function(it){ lineRH.push(it); }); mEnd[L*mpl+c]=lineRH.length-1;
         inner+=ln(mx+mw,topT,mx+mw,topT+4*S,1.2,INK)+ln(mx+mw,topB,mx+mw,topB+4*S,1.2,INK); }
+      for(var ti=0;ti<lineRH.length-1;ti++){ if(lineRH[ti].n.tieNext && lineRH[ti].ps.length===1 && lineRH[ti+1].ps.length===1 && lineRH[ti].ps[0]===lineRH[ti+1].ps[0]) inner+=drawTie(lineRH[ti],lineRH[ti+1]); }
+      if(prob.slurs) prob.slurs.forEach(function(sp){ if(sp[0]>=L*mpl && sp[1]<=L*mpl+lineMs.length-1){ var a=lineRH[mStart[sp[0]]], b=lineRH[mEnd[sp[1]]]; if(a&&b&&a!==b) inner+=drawSlur(a,b); } });
     }
     host.innerHTML=svg(W,H,inner);
   }
@@ -265,41 +264,57 @@
   function nearest(c,t){ var best=c[0],bd=1e9; c.forEach(function(v){ var d=Math.abs(v-t); if(d<bd){bd=d;best=v;} }); return best; }
   function clampI(i,mx){ return Math.max(0,Math.min(mx-1,i)); }
 
-  var PAT1=[[0,1,2,3],[0,2,4,2],[4,3,2,1],[0,2,1,0],[2,3,4,2],[4,2,0,2],[0,1,2,0],[2,1,0,1],[0,2,4,4],[4,4,2,0],[0,1,2,4],[4,3,2,0]];
-  var PROG2=[['I','V'],['I','IV'],['V','I'],['IV','I'],['I','V'],['I','IV']];
+  var METERS={'2/4':{num:2,den:4,qb:2},'3/4':{num:3,den:4,qb:3},'4/4':{num:4,den:4,qb:4},'6/8':{num:6,den:8,qb:3}};
   var PROG3=[['I','IV','V7','I'],['I','II','V','I'],['I','IV','I','V7'],['I','V','IV','I'],['I','IV','V','I'],['I','II','V7','I']];
-  var R3=[[{dur:'q'},{dur:'q'},{dur:'q'}],[{dur:'h',dot:1}],[{dur:'q',dot:1},{dur:'8'},{dur:'q'}],[{dur:'h'},{dur:'q'}],[{dur:'q'},{dur:'h'}]];
-  var R4=[[{dur:'q'},{dur:'q'},{dur:'q'},{dur:'q'}],[{dur:'h'},{dur:'q'},{dur:'q'}],[{dur:'q',dot:1},{dur:'8'},{dur:'q'},{dur:'q'}],[{dur:'h',dot:1},{dur:'q'}],[{dur:'q'},{dur:'q'},{dur:'h'}],[{dur:'q'},{dur:'8'},{dur:'8'},{dur:'h'}]];
-
-  function decorate(mm,rN){ var deco=Math.random();
-    if(deco<0.22){ for(var t=0;t<rN.length-1;t++){ if(rN[t].dur==='q'&&rN[t+1].dur==='q'){ rN[t+1]={pitch:rN[t].pitch,dur:'q'}; rN[t].tieNext=true; break; } } }
-    else if(deco<0.5 && rN.length>=2){ mm.slurs=[[0,rN.length-1]]; } }
-
-  function genEasy(){
-    var key=rnd(['C','G','F','D']), cfg=KEYCFG[key], rh=scalePitches(cfg.cls,4,11), lh=scalePitches(cfg.cls,3,9);
-    var prog=rnd(PROG2), measures=[], prev=0;
-    for(var m=0;m<2;m++){ var sym=prog[m], tones=triadIdx(sym), rN=[], cur=nearest(tones,prev);
-      for(var beat=0;beat<4;beat++){ var strong=(beat%2===0);
-        if(Math.random()<0.22 && beat<3){ var a=strong?nearest(tones,cur):cur+(Math.random()<.5?1:-1), b=a+(Math.random()<.5?1:-1); a=clampI(a,10); b=clampI(b,10); rN.push({pitch:rh[a],dur:'8'}); rN.push({pitch:rh[b],dur:'8'}); cur=b; }
-        else { var p=strong?nearest(tones,cur):cur+(Math.random()<.5?1:-1); p=clampI(p,10); rN.push({pitch:rh[p],dur:'q'}); cur=p; } }
-      if(m===1) rN[rN.length-1]={pitch:rh[nearest(tones,0)],dur:'q'};
-      prev=cur; var mm={rh:rN,lh:[{pitch:lh[ROOTDEG[sym]-1],dur:'w'}]}; decorate(mm,rN); measures.push(mm); }
-    return {key:key,sig:cfg.sig,meter:4,measures:measures};
+  function B(dur,dot){return {t:'B',dur:dur,dot:dot};}
+  function Ch(dur,dot){return {t:'C',dur:dur,dot:dot};}
+  var RHYTHMS={
+    '2/4':[[{dur:'q'},{dur:'q'}],[{dur:'8'},{dur:'8'},{dur:'q'}],[{dur:'q'},{dur:'8'},{dur:'8'}],[{dur:'h'}],[{dur:'q',dot:1},{dur:'8'}]],
+    '3/4':[[{dur:'q'},{dur:'q'},{dur:'q'}],[{dur:'h',dot:1}],[{dur:'q',dot:1},{dur:'8'},{dur:'q'}],[{dur:'h'},{dur:'q'}],[{dur:'q'},{dur:'h'}],[{dur:'8'},{dur:'8'},{dur:'q'},{dur:'q'}]],
+    '4/4':[[{dur:'q'},{dur:'q'},{dur:'q'},{dur:'q'}],[{dur:'h'},{dur:'q'},{dur:'q'}],[{dur:'q',dot:1},{dur:'8'},{dur:'q'},{dur:'q'}],[{dur:'h',dot:1},{dur:'q'}],[{dur:'q'},{dur:'q'},{dur:'h'}],[{dur:'q'},{dur:'8'},{dur:'8'},{dur:'h'}],[{dur:'w'}]],
+    '6/8':[[{dur:'q',dot:1},{dur:'q',dot:1}],[{dur:'q',dot:1},{dur:'8'},{dur:'8'},{dur:'8'}],[{dur:'8'},{dur:'8'},{dur:'8'},{dur:'q',dot:1}],[{dur:'q'},{dur:'8'},{dur:'q'},{dur:'8'}],[{dur:'8'},{dur:'8'},{dur:'8'},{dur:'8',beamBreak:1},{dur:'8'},{dur:'8'}]]
+  };
+  var RHYTHMS_EASY={
+    '4/4':[[{dur:'q'},{dur:'q'},{dur:'q'},{dur:'q'}],[{dur:'h'},{dur:'q'},{dur:'q'}],[{dur:'q'},{dur:'q'},{dur:'h'}],[{dur:'h'},{dur:'h'}]],
+    '3/4':[[{dur:'q'},{dur:'q'},{dur:'q'}],[{dur:'h'},{dur:'q'}],[{dur:'q'},{dur:'h'}],[{dur:'h',dot:1}]]
+  };
+  var LHPATS={
+    '2/4':[[Ch('h')],[B('q'),Ch('q')]],
+    '3/4':[[Ch('h',1)],[B('q'),Ch('q'),Ch('q')],[B('h'),Ch('q')]],
+    '4/4':[[Ch('w')],[B('q'),Ch('q'),B('q'),Ch('q')],[Ch('h'),Ch('h')],[B('h'),Ch('h')]],
+    '6/8':[[Ch('q',1),Ch('q',1)],[B('q',1),Ch('q',1)]]
+  };
+  var LHPATS_EASY={
+    '4/4':[[Ch('w')],[Ch('h'),Ch('h')],[B('h'),Ch('h')]],
+    '3/4':[[Ch('h',1)],[B('h'),Ch('q')]]
+  };
+  var MARKS=['Moderato','Allegretto','Andante','Andantino'];
+  function genPiece(keys,nBars,metersAllowed,easy){
+    var key=rnd(keys), cfg=KEYCFG[key], rh=scalePitches(cfg.cls,4,11);
+    var mk=rnd(metersAllowed), meter=METERS[mk];
+    var RB=(easy?RHYTHMS_EASY:RHYTHMS)[mk], LB=(easy?LHPATS_EASY:LHPATS)[mk];
+    var prog=[]; while(prog.length<nBars) prog=prog.concat(rnd(PROG3)); prog=prog.slice(0,nBars); prog[nBars-1]='I';
+    var measures=[], prev=0;
+    for(var m=0;m<nBars;m++){
+      var sym=prog[m], tones=triadIdx(sym), rhythm=rnd(RB), rN=[], cur=nearest(tones,prev), slot=0;
+      rhythm.forEach(function(sl){ var p; if(sl.dur==='8') p=cur+(Math.random()<.5?1:-1); else p=(slot<0.01||Math.random()<.45)?nearest(tones,cur):cur+(Math.random()<.5?1:-1); p=clampI(p,10);
+        rN.push({pitch:rh[p],dur:sl.dur,dot:sl.dot,beamBreak:sl.beamBreak}); cur=p; slot+=beatsOf(sl); });
+      if(m===nBars-1){ var Lz=rN[rN.length-1]; rN[rN.length-1]={pitch:rh[nearest([0,7],cur)],dur:Lz.dur,dot:Lz.dot}; }
+      prev=cur;
+      var chord=buildChord(cfg.cls,ROOTDEG[sym]);
+      var lN=rnd(LB).map(function(tk){ return tk.t==='B'?{pitch:chord[0],dur:tk.dur,dot:tk.dot}:{pitches:chord,dur:tk.dur,dot:tk.dot}; });
+      measures.push({rh:rN,lh:lN});
+    }
+    for(var e=0;e+1<nBars;e+=2){ if(Math.random()<0.28){ var a=measures[e].rh, b=measures[e+1].rh, la=a[a.length-1];
+      if(la.pitch && b[0].pitch){ b[0]={pitch:la.pitch,dur:b[0].dur,dot:b[0].dot}; la.tieNext=true; } } }
+    var slurs=[]; for(var ls=0; ls<nBars; ls+=2){ if(Math.random()<0.7) slurs.push([ls,Math.min(ls+1,nBars-1)]); }
+    return {key:key,sig:cfg.sig,meter:meter,measures:measures,mark:easy?null:rnd(MARKS),slurs:slurs};
   }
-  function genHard(nBars){
-    var key3=rnd(['G','D','F','Bb','Am','Em','Dm','Gm']), cfg3=KEYCFG[key3], rh3=scalePitches(cfg3.cls,4,10);
-    var meter=Math.random()<0.5?3:4, prog=[];
-    while(prog.length<nBars) prog=prog.concat(rnd(PROG3)); prog=prog.slice(0,nBars); prog[nBars-1]='I';
-    var measures3=[], prev3=0;
-    for(var i2=0;i2<nBars;i2++){ var sym3=prog[i2], tones3=triadIdx(sym3), rhythm= meter===3?rnd(R3):rnd(R4), rN3=[], cur3=nearest(tones3,prev3), slot=0;
-      rhythm.forEach(function(sl){ var strong=(slot===0); var p; if(sl.dur==='8'){ p=cur3+(Math.random()<.5?1:-1);} else { p=strong?nearest(tones3,cur3):(Math.random()<.5?nearest(tones3,cur3):cur3+(Math.random()<.5?1:-1)); }
-        p=clampI(p,9); rN3.push({pitch:rh3[p],dur:sl.dur,dot:sl.dot}); cur3=p; slot+=beatsOf(sl); });
-      if(i2===nBars-1){ rN3[rN3.length-1]={pitch:rh3[nearest([0,7],cur3)],dur:rN3[rN3.length-1].dur,dot:rN3[rN3.length-1].dot}; }
-      prev3=cur3; var chord=buildChord(cfg3.cls,ROOTDEG[sym3]); var ldur= meter===3?'h':'w', ldot= meter===3?1:0;
-      var mo={rh:rN3, lh:[{pitches:chord,dur:ldur,dot:ldot}]}; decorate(mo,rN3); measures3.push(mo); }
-    return {key:key3,sig:cfg3.sig,meter:meter,measures:measures3,mark: meter===3?'Allegretto':'Moderato'};
+  function genProblem(level){
+    if(level===1) return genPiece(['C','G','F','D'],2,['4/4','3/4'],true);
+    if(level===2) return genPiece(['G','D','F','Bb','Am','Em','Dm','Gm'],4,['2/4','3/4','4/4'],false);
+    return genPiece(['G','D','F','Bb','Am','Em','Dm','Gm'],8,['2/4','3/4','4/4','6/8'],false);
   }
-  function genProblem(level){ if(level===1) return genEasy(); if(level===2) return genHard(4); return genHard(8); }
   function buildPool(level,n){ var a=[]; for(var i=0;i<n;i++) a.push(genProblem(level)); return a; }
   var POOL={1:buildPool(1,100),2:buildPool(2,100),3:buildPool(3,100)};
   function shuffle(a){ a=a.slice(); for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
@@ -313,7 +328,7 @@
   function setProg(){ document.getElementById('progText').textContent= running?('問題 '+(idx+1)+' / '+numQ):'準備OK';
     var d=document.getElementById('dots'); d.innerHTML=''; for(var i=0;i<numQ;i++){ var t=document.createElement('i'); if(i<idx)t.className='done'; else if(i===idx&&running)t.className='cur'; d.appendChild(t);} }
   function fillBar(full,ms){ var f=document.getElementById('fill'); f.style.transition='none'; f.style.width=full?'100%':'0%'; if(ms){ requestAnimationFrame(function(){ f.style.transition='width '+ms+'ms linear'; f.style.width='0%'; }); } }
-  function totalBeats(prob){ return prob.measures.length*prob.meter; }
+  function totalBeats(prob){ return prob.measures.length*prob.meter.qb; }
 
   function startGame(){ unlock(); running=true; idx=0; queue=shuffle(POOL[diff]).slice(0,numQ);
     document.getElementById('startBtn').disabled=true; document.getElementById('stopBtn').disabled=false; document.getElementById('startBtn').textContent='プレイ中…';
@@ -334,14 +349,12 @@
           var ansMs=Math.round(beats*spb*1000)+600;
           later(ansMs,function(){ idx++; if(idx>=queue.length) finish(); else runProblem(); }); }); }); }); }
 
-  function playAnswer(prob,spb){ var c=audio(); if(!c) return; var t0=c.currentTime+0.08, tR=0;
-    prob.measures.forEach(function(mm){
-      var l=0, k=0;
-      while(k<mm.rh.length){ var first=mm.rh[k], pitch=first.pitch||(first.pitches&&first.pitches[0]); var b=beatsOf(first), startBeat=l;
-        while(mm.rh[k].tieNext && mm.rh[k+1]){ k++; b+=beatsOf(mm.rh[k]); }
-        piano(pitch, t0+(tR+startBeat)*spb, b*spb*0.96, 0.5); l=startBeat+b; k++; }
-      var l2=0; mm.lh.forEach(function(n){ var b2=beatsOf(n); var ps=n.pitches||[n.pitch]; ps.forEach(function(p){ piano(p,t0+(tR+l2)*spb,b2*spb*0.96,0.42); }); l2+=b2; });
-      tR+=prob.meter; }); }
+  function playAnswer(prob,spb){ var c=audio(); if(!c) return; var t0=c.currentTime+0.08;
+    var flat=[], gb=0; prob.measures.forEach(function(mm){ mm.rh.forEach(function(n){ flat.push({n:n,sb:gb}); gb+=beatsOf(n); }); });
+    var k=0; while(k<flat.length){ var f=flat[k], pitch=f.n.pitch||(f.n.pitches&&f.n.pitches[0]), b=beatsOf(f.n), sb=f.sb;
+      while(flat[k].n.tieNext && flat[k+1]){ k++; b+=beatsOf(flat[k].n); }
+      if(pitch) piano(pitch,t0+sb*spb,b*spb*0.96,0.5); k++; }
+    var lg=0; prob.measures.forEach(function(mm){ mm.lh.forEach(function(n){ var b=beatsOf(n), ps=n.pitches||[n.pitch]; ps.forEach(function(p){ piano(p,t0+lg*spb,b*spb*0.96,0.42); }); lg+=b; }); }); }
 
   function finish(){ clearTimers(); running=false; var c=audio(); if(c){ var t=c.currentTime+0.1; ['C5','E5','G5','C6'].forEach(function(p,k){ piano(p,t+k*0.12,0.6,0.5); }); }
     document.getElementById('gStaff').innerHTML='<div class="done"><div class="big">おしまい！🎉</div><div class="small">'+numQ+'問クリア。よくがんばりました。</div></div>';
